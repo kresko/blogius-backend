@@ -1,78 +1,142 @@
-# blogius-backend
+# Blogius Backend
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+REST API backend for the Blogius blogging platform, built with [Quarkus 3.31.4](https://quarkus.io/) and Java 25.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## Overview
 
-## Running the application in dev mode
+Blogius Backend provides a JSON REST API for managing blog posts. It is designed to pair with an Angular frontend running on `http://localhost:4200`.
 
-You can run your application in dev mode that enables live coding using:
+**Tech stack:**
+- **Framework:** Quarkus 3.31.4
+- **Language:** Java 25
+- **Database:** PostgreSQL (via JDBC + Hibernate ORM with Panache)
+- **Serialization:** Jackson (via `quarkus-rest-jackson`)
+- **Validation:** Hibernate Validator
+- **API Docs:** SmallRye OpenAPI + Swagger UI
 
-```shell script
+## API Endpoints
+
+Base path: `/api/posts`
+
+| Method   | Path              | Description             | Response        |
+|----------|-------------------|-------------------------|-----------------|
+| `GET`    | `/api/posts`      | List all posts          | `200 OK`        |
+| `GET`    | `/api/posts/{id}` | Get a post by ID        | `200 OK` / `404`|
+| `POST`   | `/api/posts`      | Create a new post       | `201 Created`   |
+| `PUT`    | `/api/posts/{id}` | Update an existing post | `200 OK` / `404`|
+| `DELETE` | `/api/posts/{id}` | Delete a post           | `204 No Content`/ `404` |
+
+### Post model
+
+```json
+{
+  "id": 1,
+  "title": "My First Post",
+  "content": "Post body text...",
+  "author": "Jane Doe",
+  "createdAt": "2026-02-26T10:00:00",
+  "updated_at": "2026-02-26T12:00:00"
+}
+```
+
+Interactive API documentation is available via Swagger UI at `http://localhost:8080/q/swagger-ui/` when the application is running.
+
+## Prerequisites
+
+- Java 25+
+- Maven (or use the included `./mvnw` wrapper)
+- PostgreSQL instance
+
+## Configuration
+
+Database and other settings are configured in `src/main/resources/application.properties`:
+
+```properties
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=<your-user>
+quarkus.datasource.password=<your-password>
+quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/<your-db>
+
+quarkus.hibernate-orm.database.generation=drop-and-create
+
+quarkus.http.cors.enabled=true
+quarkus.http.cors.origins=http://localhost:4200
+
+quarkus.swagger-ui.always-include=true
+```
+
+> **Note:** `drop-and-create` recreates the database schema on every startup. Change to `update` or `none` for persistent data in production.
+
+## Running in dev mode
+
+Dev mode enables live reload and the Quarkus Dev UI at `http://localhost:8080/q/dev/`:
+
+```shell
 ./mvnw quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+## Packaging and running
 
-## Packaging and running the application
+Build a standard JAR:
 
-The application can be packaged using:
-
-```shell script
+```shell
 ./mvnw package
+java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+Build an über-jar (all dependencies bundled):
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
+```shell
 ./mvnw package -Dquarkus.package.jar.type=uber-jar
+java -jar target/*-runner.jar
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+## Native executable
 
-## Creating a native executable
+Compile to a native binary with GraalVM:
 
-You can create a native executable using:
-
-```shell script
+```shell
 ./mvnw package -Dnative
+./target/blogius-backend-1.0.0-SNAPSHOT-runner
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+Without a local GraalVM installation, build inside a container:
 
-```shell script
+```shell
 ./mvnw package -Dnative -Dquarkus.native.container-build=true
 ```
 
-You can then execute your native executable with: `./target/blogius-backend-1.0.0-SNAPSHOT-runner`
+## Docker
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+Pre-built Dockerfiles for different deployment modes are located in `src/main/docker/`:
 
-## Related Guides
+| File                        | Description                     |
+|-----------------------------|---------------------------------|
+| `Dockerfile.jvm`            | JVM mode                        |
+| `Dockerfile.legacy-jar`     | Legacy JAR / über-jar mode      |
+| `Dockerfile.native`         | Native executable               |
+| `Dockerfile.native-micro`   | Native executable (micro image) |
 
-- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): Simplify your persistence code for Hibernate ORM via the active record or the repository pattern
-- SmallRye OpenAPI ([guide](https://quarkus.io/guides/openapi-swaggerui)): Document your REST APIs with OpenAPI - comes with Swagger UI
-- JDBC Driver - PostgreSQL ([guide](https://quarkus.io/guides/datasource)): Connect to the PostgreSQL database via JDBC
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
+## Running tests
 
-## Provided Code
+```shell
+./mvnw test
+```
 
-### Hibernate ORM
+Integration tests (runs against the packaged application):
 
-Create your first JPA entity
+```shell
+./mvnw verify
+```
 
-[Related guide section...](https://quarkus.io/guides/hibernate-orm)
+## Project structure
 
-[Related Hibernate with Panache section...](https://quarkus.io/guides/hibernate-orm-panache)
-
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+```
+src/main/java/com/blogius/
+├── entity/
+│   └── Post.java           # JPA entity (Panache active record)
+├── resource/
+│   └── PostResource.java   # REST endpoints
+└── service/
+    └── PostService.java    # Business logic
+```
