@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: blogius-db
+    environment:
+      POSTGRES_DB: blogius
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - blogius_data:/var/lib/postgresql/data
+
+volumes:
+  blogius_data:
